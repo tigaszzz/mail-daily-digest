@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy"
+        content="
+          default-src 'none';
+          script-src  'self';
+          style-src   'self' 'unsafe-inline';
+          connect-src 'self'
+                      https://api.anthropic.com
+                      https://api.openai.com
+                      https://generativelanguage.googleapis.com
+                      https://accounts.google.com
+                      https://oauth2.googleapis.com
+                      https://www.googleapis.com
+                      https://login.microsoftonline.com
+                      https://graph.microsoft.com;
+          img-src     'self' data:;
+          font-src    'self';
+        " />
+  <title>Mail Digest</title>
+  <link rel="stylesheet" href="fonts/fonts.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-mark">
+    <span class="brand-dot" aria-hidden="true"></span>
+    <span class="brand-name">Mail Digest</span>
+  </div>
+  <div class="top-meta">
+    <label id="mail-provider-label-wrap" class="mail-provider-label hidden">
+      <span class="visually-hidden">Conta de correio</span>
+      <select id="mail-provider-select" class="mail-provider-select" aria-label="Conta de correio">
+        <option value="gmail">Gmail</option>
+        <option value="microsoft">Outlook (pessoal)</option>
+      </select>
+    </label>
+    <button type="button" id="btn-refresh" class="icon-btn hidden" title="Actualizar digest">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 8a5 5 0 1 0 1.5-3.5"/><path d="M3 3v3h3"/></svg>
+    </button>
+    <button type="button" id="btn-settings" class="icon-btn" title="Definições">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="2"/><path d="M13 8a5 5 0 0 0-.5-2.2l1.2-.9-1-1.7-1.4.5a5 5 0 0 0-1.7-1L9.3 1.2H7L6.7 2.7a5 5 0 0 0-1.7 1l-1.4-.5-1 1.7L4 5.8A5 5 0 0 0 3 8a5 5 0 0 0 .5 2.2l-1.2.9 1 1.7 1.4-.5a5 5 0 0 0 1.7 1l.3 1.5H9.3l.3-1.5a5 5 0 0 0 1.7-1l1.4.5 1-1.7-1.2-.9A5 5 0 0 0 13 8z"/></svg>
+    </button>
+    <button type="button" id="user-avatar" class="avatar" title="Definições">
+      <span class="avatar-inner" id="avatar-inner">?</span>
+    </button>
+  </div>
+</header>
+
+<section id="login-gate" class="login-gate" aria-labelledby="login-title">
+  <div class="login-card">
+    <div class="login-card-inner">
+      <div class="login-card-intro">
+        <h1 id="login-title" class="login-title">Iniciar sessão</h1>
+        <p class="login-lead">
+          Liga o teu correio para ver o briefing diário com IA.
+          Escolhe Gmail ou Outlook pessoal — o browser abre só para autorizar.
+        </p>
+      </div>
+      <div class="login-or" aria-hidden="true"><span>ou</span></div>
+      <div class="login-providers">
+        <button type="button" id="btn-login-gmail" class="login-provider-btn login-provider-btn--gmail"
+          title="Autorizar acesso à conta Google (Gmail)">
+          <span class="login-provider-icon login-provider-icon--gmail" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" focusable="false">
+              <path fill="#EA4335" d="M12 11.2v6.5h6.6c-.3 1.5-1.2 2.8-2.5 3.6l4 3.1C22.4 20 24 17.3 24 14c0-1-.2-2-.5-2.8H12z"/>
+              <path fill="#34A853" d="M5.3 14.3l-1.5 1.2L1.6 17.5C2.9 20.4 6.1 22.5 12 22.5c3.2 0 5.9-1 7.9-2.8l-4-3.1c-1.1.7-2.5 1.2-3.9 1.2-3 0-5.5-2-6.4-4.7z"/>
+              <path fill="#4A90E2" d="M1.6 6.5C.6 8.3 0 10.4 0 12.5s.6 4.2 1.6 6l4.2-3.3C5.1 14 5 13.3 5 12.5s.1-1.5.8-2.7L1.6 6.5z"/>
+              <path fill="#FBBC05" d="M12 5c1.7 0 3.2.6 4.4 1.7l3.3-3.3C17.9 1.8 15.2.5 12 .5 6.1.5 2.9 2.6 1.6 5.5l4.2 3.3C6.5 7 9 5 12 5z"/>
+            </svg>
+          </span>
+          <span class="login-provider-text">
+            <span class="login-provider-name">Entrar com Gmail</span>
+            <span class="login-provider-meta">Google</span>
+          </span>
+        </button>
+        <button type="button" id="btn-login-outlook" class="login-provider-btn login-provider-btn--outlook"
+          title="Autorizar Outlook pessoal (@outlook.com, Hotmail, Live)">
+          <span class="login-provider-icon login-provider-icon--outlook" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" focusable="false">
+              <path fill="currentColor" d="M22 6.5v11L13.5 18V6l8.5.5zM11 8.5v7L2 17V7l9 1.5zM0 5.5h10v13H0V5.5z"/>
+            </svg>
+          </span>
+          <span class="login-provider-text">
+            <span class="login-provider-name">Entrar com Outlook</span>
+            <span class="login-provider-meta">Pessoal</span>
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<main class="page hidden" id="briefing-root" aria-live="polite">
+  <!-- renderer.js monta o briefing aqui -->
+</main>
+
+<div class="ask-bar hidden" id="ask-bar" title="Pergunta algo">
+  <div class="ask-prompt">
+    <strong>Pergunta algo</strong> — ex: "o que recebi do banco esta semana?"
+  </div>
+  <span class="ask-kbd">⌘ K</span>
+  <button type="button" class="ask-go" id="ask-go" title="Falar com o assistente">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 8h12M9 3l5 5-5 5"/></svg>
+  </button>
+</div>
+
+<output id="toast" class="toast hidden" aria-live="polite"></output>
+
+<!-- Modo conversa — placeholder até à iteração Conversation mode -->
+<dialog id="convo-modal" class="convo-modal hidden" aria-labelledby="convo-modal-title">
+  <div class="convo-modal-card">
+    <div class="convo-modal-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 4-7.5L3 5v4l4-2"/><path d="M9 11h6M9 14h4"/></svg>
+    </div>
+    <h3 id="convo-modal-title">Modo conversa em breve</h3>
+    <p>Vais poder perguntar coisas como "o que recebi do banco esta semana?" e pedir rascunhos directamente. Está no roadmap — para já o briefing diário é o coração da app.</p>
+    <button type="button" id="btn-convo-close" class="btn btn-brand">Entendido</button>
+  </div>
+</dialog>
+
+<!-- Definições: overlay (mesmo sistema visual) -->
+<div id="settings-panel" class="settings-overlay hidden">
+  <div class="settings-inner">
+    <div class="settings-header">
+      <div class="section-label settings-heading-label">Definições</div>
+      <button type="button" id="btn-save-settings" class="btn btn-primary">Guardar e fechar</button>
+    </div>
+
+    <section class="settings-section">
+      <div class="section-label section-label-muted">Perfil</div>
+      <label class="field-label">Nome para a saudação
+        <input type="text" id="display-name" placeholder="ex.: Tiago" autocomplete="off" maxlength="60" />
+      </label>
+    </section>
+
+    <section class="settings-section">
+      <div class="section-label section-label-muted">Conta Outlook pessoal</div>
+      <p class="hint">
+        Só <strong>@outlook.com</strong> / Hotmail / Live — não contas de trabalho M365.
+        Tu registas <strong>uma</strong> app no <a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps">portal Azure</a>
+        (guia <code>docs/MICROSOFT-OAUTH.md</code>); utilizadores finais só fazem login.
+      </p>
+      <p id="oauth-microsoft-builtin-hint" class="hint hidden"></p>
+      <label class="field-label">Microsoft Client ID
+        <input type="text" id="microsoft-client-id" placeholder="UUID da aplicação Azure" autocomplete="off" />
+      </label>
+      <label class="field-label">Microsoft Client Secret
+        <input type="password" id="microsoft-client-secret" placeholder="Deixa em branco para manter" autocomplete="off" />
+        <span id="microsoft-client-secret-status" class="key-status"></span>
+      </label>
+      <div class="auth-row">
+        <span id="microsoft-auth-status" class="meta keyline">Não ligado</span>
+        <button type="button" id="btn-connect-microsoft" class="btn">Ligar Microsoft</button>
+        <button type="button" id="btn-disconnect-microsoft" class="btn hidden">Desligar</button>
+      </div>
+    </section>
+
+    <section class="settings-section">
+      <div class="section-label section-label-muted">Conta Gmail</div>
+      <p class="hint">
+        Cliente OAuth tipo <strong>Aplicação para computador</strong> —
+        <a href="https://console.cloud.google.com/apis/credentials">Consola Google</a>.
+        Guia para uso público sem avisos: <code>docs/GOOGLE-OAUTH-PRODUCAO.md</code>
+        (ecrã de consentimento em <strong>Produção</strong> + verificação do scope <code>gmail.modify</code>).
+        Login: redirect <code>http://127.0.0.1:&lt;porta&gt;/oauth/callback</code>.
+      </p>
+      <p id="oauth-builtin-hint" class="hint hidden"></p>
+      <label class="field-label">Google Client ID
+        <input type="text" id="google-client-id" placeholder="123….apps.googleusercontent.com" autocomplete="off" />
+      </label>
+      <label class="field-label">Google Client Secret
+        <input type="password" id="google-client-secret" placeholder="Deixa em branco para manter" autocomplete="off" />
+        <span id="google-client-secret-status" class="key-status"></span>
+      </label>
+      <div class="auth-row">
+        <span id="google-auth-status" class="meta keyline">Não ligado</span>
+        <button type="button" id="btn-connect-google" class="btn">Ligar ao Google</button>
+        <button type="button" id="btn-disconnect-google" class="btn hidden">Desligar</button>
+      </div>
+    </section>
+
+    <section class="settings-section">
+      <div class="section-label section-label-muted">Modelo de IA</div>
+      <label class="field-label">Provider
+        <select id="provider-select">
+          <option value="anthropic">Anthropic</option>
+          <option value="openai">OpenAI</option>
+          <option value="google">Google Gemini</option>
+        </select>
+      </label>
+
+      <div class="provider-block" data-provider="anthropic">
+        <label class="field-label">API Key Anthropic
+          <input type="password" id="anthropic-key" placeholder="Deixa em branco para manter" autocomplete="off" />
+          <span id="anthropic-key-status" class="key-status"></span>
+        </label>
+        <label class="field-label">Modelo
+          <input type="text" id="anthropic-model" placeholder="claude-haiku-4-5" autocomplete="off" />
+        </label>
+      </div>
+
+      <div class="provider-block hidden" data-provider="openai">
+        <label class="field-label">API Key OpenAI
+          <input type="password" id="openai-key" placeholder="Deixa em branco para manter" autocomplete="off" />
+          <span id="openai-key-status" class="key-status"></span>
+        </label>
+        <label class="field-label">Modelo
+          <input type="text" id="openai-model" placeholder="gpt-4.1-mini" autocomplete="off" />
+        </label>
+      </div>
+
+      <div class="provider-block hidden" data-provider="google">
+        <label class="field-label">API Key Google AI
+          <input type="password" id="google-key" placeholder="Deixa em branco para manter" autocomplete="off" />
+          <span id="google-key-status" class="key-status"></span>
+        </label>
+        <label class="field-label">Modelo
+          <input type="text" id="google-model" placeholder="gemini-2.5-flash" autocomplete="off" />
+        </label>
+      </div>
+
+    </section>
+  </div>
+</div>
+
+<script src="renderer.js"></script>
+</body>
+</html>

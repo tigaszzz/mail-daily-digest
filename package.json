@@ -1,0 +1,102 @@
+{
+  "name": "gmail-daily-digest",
+  "version": "0.1.0",
+  "description": "Desktop app que mostra um resumo diário do Gmail e sugere tarefas, eventos e respostas usando Claude.",
+  "main": "src/main.js",
+  "author": "Tiago Almeida",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "fix-perms": "chmod -R u+x node_modules/electron/dist/Electron.app",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder -mwl",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux"
+  },
+  "dependencies": {
+    "electron-store": "^8.2.0",
+    "keytar": "^7.9.0"
+  },
+  "devDependencies": {
+    "electron": "^42.0.1",
+    "electron-builder": "^26.8.1",
+    "snyk": "^1.1305.1"
+  },
+  "build": {
+    "appId": "com.tiagoalmeida.gmaildailydigest",
+    "productName": "Gmail Daily Digest",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "electron_icons_digest/icon.icns",
+      "electron_icons_digest/icon.ico",
+      "electron_icons_digest/icon.png",
+      "electron_icons_digest/icon_512x512.png",
+      "package.json"
+    ],
+    "mac": {
+      "icon": "electron_icons_digest/icon.icns",
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ]
+    },
+    "win": {
+      "icon": "electron_icons_digest/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "protocols": [
+      {
+        "name": "Gmail Daily Digest OAuth",
+        "schemes": [
+          "com.googleusercontent.apps.REDACTED_GOOGLE_CLIENT_ID"
+        ]
+      }
+    ],
+    "linux": {
+      "icon": "electron_icons_digest/icon_512x512.png",
+      "category": "Office",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
+  },
+  "overrides": {
+    "glob": "10.5.0"
+  }
+}
