@@ -45,16 +45,19 @@ const {
   bootstrapOAuthFromEnv,
   resolveGoogleOAuthCredentials,
   isOAuthConfigured,
-  hasBuiltInOAuthClient,
   KEYTAR_SERVICE
 } = require('./services/oauth-config');
 const {
   bootstrapMicrosoftOAuthFromEnv,
   resolveMicrosoftOAuthCredentials,
-  isMicrosoftOAuthConfigured,
-  hasBuiltInMicrosoftOAuthClient
+  isMicrosoftOAuthConfigured
 } = require('./services/oauth-microsoft-config');
 const { buildBriefingWithProvider }                               = require('./providers/llm');
+const {
+  oauthNotConfigured,
+  oauthSessionRequired,
+  logDevDetail
+} = require('./services/user-facing-error');
 
 // Non-sensitive config only — API keys and secrets live in the OS keychain via keytar
 const DEFAULT_SETTINGS = {
@@ -205,8 +208,13 @@ ipcMain.handle('shell:open-external', (_evt, url) => {
 ipcMain.handle('keychain:get', (_evt, key) =>
   keytar.getPassword(KEYTAR_SERVICE, key));
 
-ipcMain.handle('keychain:set', (_evt, key, value) =>
-  keytar.setPassword(KEYTAR_SERVICE, key, value));
+ipcMain.handle('keychain:set', (_evt, key, value) => {
+  const oauthKeys = new Set(['google-client-secret', 'microsoft-client-secret']);
+  if (oauthKeys.has(key)) {
+    throw new Error('Credenciais OAuth não são configuráveis na app.');
+  }
+  return keytar.setPassword(KEYTAR_SERVICE, key, value);
+});
 
 ipcMain.handle('keychain:delete', (_evt, key) =>
   keytar.deletePassword(KEYTAR_SERVICE, key));
@@ -217,8 +225,8 @@ ipcMain.handle('keychain:delete', (_evt, key) =>
 
 ipcMain.handle('settings:get', async () => {
   const [
-    { clientId, clientSecret },
-    { clientId: msClientId, clientSecret: msClientSecret },
+    { clientId },
+    { clientId: msClientId },
     anthropicKey,
     openaiKey,
     googleKey,
@@ -238,8 +246,6 @@ ipcMain.handle('settings:get', async () => {
     anthropicModel: store.get('anthropicModel'),
     openaiModel:    store.get('openaiModel'),
     googleModel:    store.get('googleModel'),
-    googleClientId: store.get('googleClientId'),
-    microsoftClientId: msClientId || store.get('microsoftClientId'),
     mailProvider:   activeMailProvider(),
     autoRefreshHour: store.get('autoRefreshHour'),
     displayName:    store.get('displayName') || '',
@@ -248,12 +254,8 @@ ipcMain.handle('settings:get', async () => {
     hasGoogleKey:          Boolean(googleKey),
     hasGoogleAuth:         googleAuth,
     hasMicrosoftAuth:      microsoftAuth,
-    hasGoogleClientSecret: Boolean(clientSecret),
-    hasMicrosoftClientSecret: Boolean(msClientSecret),
     hasGoogleOAuthClient:  isOAuthConfigured(clientId),
-    hasMicrosoftOAuthClient: isMicrosoftOAuthConfigured(msClientId),
-    oauthBuiltInClient:    hasBuiltInOAuthClient(),
-    oauthBuiltInMicrosoftClient: hasBuiltInMicrosoftOAuthClient()
+    hasMicrosoftOAuthClient: isMicrosoftOAuthConfigured(msClientId)
   };
 });
 
@@ -264,9 +266,10 @@ ipcMain.handle('settings:set', (_evt, cfg) => {
     'displayName'
   ]);
   for (const [k, v] of Object.entries(cfg || {})) {
-    if (allowed.has(k)) store.set(k, v);
+    if (!allowed.has(k)) continue;
+    if (k === 'googleClientId' || k === 'microsoftClientId') continue;
+    store.set(k, v);
   }
-  if (cfg?.googleClientId !== undefined) registerOAuthProtocolFromSettings();
   if (cfg?.mailProvider !== undefined && !MAIL_PROVIDERS.has(cfg.mailProvider)) {
     throw new Error('mailProvider inválido (gmail ou microsoft).');
   }
@@ -280,9 +283,9 @@ ipcMain.handle('settings:set', (_evt, cfg) => {
 ipcMain.handle('gmail:auth', async () => {
   const { clientId, clientSecret } = await resolveGoogleOAuthCredentials(store, keytar);
   if (!isOAuthConfigured(clientId)) {
-    throw new Error(
-      'Falta o Google Client ID (tipo «Aplicação para computador»). Vê docs/GOOGLE-OAUTH-PRODUCAO.md.'
-    );
+    const err = oauthNotConfigured('gmail');
+    logDevDetail(err);
+    throw err;
   }
   await startPKCEFlow(clientId, clientSecret, { useLoopback: true });
   return { ok: true };
@@ -384,16 +387,18 @@ ipcMain.handle('mail:auth', async () => {
   if (activeMailProvider() === 'microsoft') {
     const { clientId, clientSecret } = await resolveMicrosoftOAuthCredentials(store, keytar);
     if (!isMicrosoftOAuthConfigured(clientId)) {
-      throw new Error(
-        'Falta o Microsoft Client ID. Cola MICROSOFT_CLIENT_ID no .env, guarda o ficheiro (Cmd+S), reinicia a app — ou preenche nas Definições → Outlook. Ver docs/MICROSOFT-OAUTH.md.'
-      );
+      const err = oauthNotConfigured('microsoft');
+      logDevDetail(err);
+      throw err;
     }
     await startMicrosoftPKCEFlow(clientId, clientSecret);
     return { ok: true };
   }
   const { clientId, clientSecret } = await resolveGoogleOAuthCredentials(store, keytar);
   if (!isOAuthConfigured(clientId)) {
-    throw new Error('Falta o Google Client ID. Vê docs/GOOGLE-OAUTH-PRODUCAO.md.');
+    const err = oauthNotConfigured('gmail');
+    logDevDetail(err);
+    throw err;
   }
   await startPKCEFlow(clientId, clientSecret, { useLoopback: true });
   return { ok: true };
@@ -499,22 +504,24 @@ ipcMain.handle('mail:create-reply-draft', async (_evt, payload) => {
 async function getGoogleToken() {
   const { clientId, clientSecret } = await resolveGoogleOAuthCredentials(store, keytar);
   if (!isOAuthConfigured(clientId)) {
-    throw new Error('Configura o Google Client ID nas Definições (ver docs/GOOGLE-OAUTH-PRODUCAO.md).');
+    const err = oauthNotConfigured('gmail');
+    logDevDetail(err);
+    throw err;
   }
   const token = await getValidAccessToken(clientId, clientSecret);
-  if (!token) throw new Error('Liga a conta Google nas Definições.');
+  if (!token) throw oauthSessionRequired('gmail');
   return token;
 }
 
 async function getMicrosoftToken() {
   const { clientId, clientSecret } = await resolveMicrosoftOAuthCredentials(store, keytar);
   if (!isMicrosoftOAuthConfigured(clientId)) {
-    throw new Error(
-      'Falta o Microsoft Client ID (.env guardado + reinício, ou Definições → Outlook). Ver docs/MICROSOFT-OAUTH.md.'
-    );
+    const err = oauthNotConfigured('microsoft');
+    logDevDetail(err);
+    throw err;
   }
   const token = await getMicrosoftAccessToken(clientId, clientSecret);
-  if (!token) throw new Error('Liga a conta Microsoft nas Definições.');
+  if (!token) throw oauthSessionRequired('microsoft');
   return token;
 }
 

@@ -1,4 +1,5 @@
-sonar.projectKey=HCCM-Consulting_mail-daily-digest
+# Copia para sonar-project.properties (não commitar — projectKey da tua org SonarCloud)
+sonar.projectKey=YOUR_ORG_mail-daily-digest
 sonar.projectName=mail-daily-digest
 sonar.sources=src
 sonar.exclusions=**/node_modules/**,**/dist/**

@@ -3,5 +3,16 @@ dist/
 .DS_Store
 ._*
 *.log
+
+# Credenciais e config local (nunca commitar)
 .env
+build/oauth-build.js
+
+# Qualidade / IDE — só no ambiente do developer
+.snyk
+sonar-project.properties
+.sonarlint/
+.vscode/
+.cursor/
+
 mockups/

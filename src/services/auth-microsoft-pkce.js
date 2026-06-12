@@ -36,7 +36,7 @@ function formatOAuthUserError(error, errorDescription) {
     case 'admin_consent_required':
       return 'Esta conta parece ser de trabalho/escola. Usa uma conta pessoal Outlook.com ou Hotmail.';
     case 'invalid_client':
-      return 'Client ID/Secret Microsoft inválidos — verifica o registo na Azure Portal.';
+      return 'Não foi possível completar a ligação. Tenta novamente mais tarde.';
     default:
       return desc || code || 'Erro desconhecido na autorização Microsoft';
   }

@@ -8,12 +8,15 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
+    "rebuild": "node node_modules/@electron/rebuild/lib/cli.js -f",
+    "postinstall": "node node_modules/@electron/rebuild/lib/cli.js -f",
     "fix-perms": "chmod -R u+x node_modules/electron/dist/Electron.app",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder -mwl",
-    "dist:mac": "electron-builder --mac",
-    "dist:win": "electron-builder --win",
-    "dist:linux": "electron-builder --linux"
+    "inject-oauth": "node scripts/inject-oauth.js",
+    "pack": "node scripts/inject-oauth.js && electron-builder --dir",
+    "dist": "node scripts/inject-oauth.js && electron-builder -mwl",
+    "dist:mac": "node scripts/inject-oauth.js && electron-builder --mac",
+    "dist:win": "node scripts/inject-oauth.js && electron-builder --win",
+    "dist:linux": "node scripts/inject-oauth.js && electron-builder --linux"
   },
   "dependencies": {
     "electron-store": "^8.2.0",
@@ -32,6 +35,7 @@
     },
     "files": [
       "src/**/*",
+      "build/oauth-build.js",
       "electron_icons_digest/icon.icns",
       "electron_icons_digest/icon.ico",
       "electron_icons_digest/icon.png",
@@ -69,14 +73,6 @@
         }
       ]
     },
-    "protocols": [
-      {
-        "name": "Gmail Daily Digest OAuth",
-        "schemes": [
-          "com.googleusercontent.apps.REDACTED_GOOGLE_CLIENT_ID"
-        ]
-      }
-    ],
     "linux": {
       "icon": "electron_icons_digest/icon_512x512.png",
       "category": "Office",

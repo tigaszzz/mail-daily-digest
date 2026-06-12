@@ -81,7 +81,7 @@ function formatOAuthUserError(error, errorDescription) {
     case 'org_internal':
       return 'Esta app está limitada a contas da organização (modo interno na Consola).';
     case 'invalid_client':
-      return 'Client ID/Secret inválidos — verifica credenciais tipo «Aplicação para computador».';
+      return 'Não foi possível completar a ligação. Tenta novamente mais tarde.';
     default:
       return desc || code || 'Erro desconhecido na autorização Google';
   }

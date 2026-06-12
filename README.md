@@ -36,7 +36,9 @@ npm run dev
 | Gmail | Cliente OAuth tipo «Aplicação para computador» na Google Cloud Console | [`docs/GOOGLE-OAUTH-PRODUCAO.md`](docs/GOOGLE-OAUTH-PRODUCAO.md) |
 | Outlook pessoal | App registration no portal Azure (só o developer regista; utilizadores só fazem login) | [`docs/MICROSOFT-OAUTH.md`](docs/MICROSOFT-OAUTH.md) |
 
-Preenche `GOOGLE_OAUTH_CLIENT_ID` / `MICROSOFT_CLIENT_ID` (e secrets, se aplicável) no `.env` — ou directamente nas **Definições** da app. Notas de segurança do fluxo loopback: [`docs/SECURITY-OAUTH-LOOPBACK.md`](docs/SECURITY-OAUTH-LOOPBACK.md).
+Em **desenvolvimento**, preenche `GOOGLE_OAUTH_CLIENT_ID` / `MICROSOFT_CLIENT_ID` no `.env` (nunca nas Definições da app — o utilizador final só vê Ligar/Desligar).
+
+Em **instaladores** (`.dmg`/`.exe`), o developer injecta as credenciais OAuth no build (`npm run dist:*` lê o `.env` → `build/oauth-build.js`, gitignored; protocolo OAuth via `electron-builder.config.js`) — nada no GitHub. O utilizador final só faz login. Ver [`docs/GOOGLE-OAUTH-PRODUCAO.md`](docs/GOOGLE-OAUTH-PRODUCAO.md). Notas de segurança do fluxo loopback: [`docs/SECURITY-OAUTH-LOOPBACK.md`](docs/SECURITY-OAUTH-LOOPBACK.md).
 
 ### Chaves de IA
 
@@ -48,10 +50,11 @@ Nas **Definições → Modelo de IA**, escolhe o provider e cola a API key — f
 |---|---|
 | `npm run dev` | Arranca em modo dev (DevTools destacadas) |
 | `npm start` | Arranca em modo normal |
+| `npm run inject-oauth` | Gera `build/oauth-build.js` a partir do `.env` |
 | `npm run pack` | Build sem instalador (pasta `dist/`) |
-| `npm run dist:mac` | Instalador macOS (dmg + zip, x64 + arm64) |
-| `npm run dist:win` | Instalador Windows (NSIS, x64) |
-| `npm run dist:linux` | AppImage + deb (x64) |
+| `npm run dist:mac` | Instalador macOS (dmg + zip, x64 + arm64) — requer `.env` com OAuth |
+| `npm run dist:win` | Instalador Windows (NSIS, x64) — requer `.env` com OAuth |
+| `npm run dist:linux` | AppImage + deb (x64) — requer `.env` com OAuth |
 
 ## Arquitectura
 
@@ -71,7 +74,7 @@ src/
 
 ## Qualidade
 
-Validado com **SonarQube** (0 issues) e **Snyk** (code + dependências, 0 vulnerabilidades). Config em `sonar-project.properties` e `.snyk`.
+Validado com **SonarQube** e **Snyk** no ambiente local. Copia `sonar-project.properties.example` → `sonar-project.properties` e `.snyk.example` → `.snyk` (ambos gitignored).
 
 ## Roadmap
 

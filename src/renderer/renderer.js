@@ -48,25 +48,43 @@ const els = {
   openaiModel: document.getElementById('openai-model'),
   googleKey: document.getElementById('google-key'),
   googleModel: document.getElementById('google-model'),
-  googleClientId: document.getElementById('google-client-id'),
-  googleClientSecret: document.getElementById('google-client-secret'),
-  googleClientSecretStatus: document.getElementById('google-client-secret-status'),
   btnSaveSettings: document.getElementById('btn-save-settings'),
   btnConnectGoogle: document.getElementById('btn-connect-google'),
   btnDisconnectGoogle: document.getElementById('btn-disconnect-google'),
   googleAuthStatus: document.getElementById('google-auth-status'),
-  oauthBuiltinHint: document.getElementById('oauth-builtin-hint'),
   anthropicStatus: document.getElementById('anthropic-key-status'),
   openaiStatus: document.getElementById('openai-key-status'),
   googleApiStatus: document.getElementById('google-key-status'),
-  microsoftClientId: document.getElementById('microsoft-client-id'),
-  microsoftClientSecret: document.getElementById('microsoft-client-secret'),
-  microsoftClientSecretStatus: document.getElementById('microsoft-client-secret-status'),
   btnConnectMicrosoft: document.getElementById('btn-connect-microsoft'),
   btnDisconnectMicrosoft: document.getElementById('btn-disconnect-microsoft'),
-  microsoftAuthStatus: document.getElementById('microsoft-auth-status'),
-  oauthMicrosoftBuiltinHint: document.getElementById('oauth-microsoft-builtin-hint')
+  microsoftAuthStatus: document.getElementById('microsoft-auth-status')
 };
+
+// ---------------------------------------------------------------------------
+// Auth error messages (sem detalhes técnicos para o utilizador final)
+// ---------------------------------------------------------------------------
+
+function extractIpcErrorMessage(err) {
+  const msg = String(err?.message || '');
+  const m = /Error invoking remote method '[^']+': (?:Error: )?(.+)/.exec(msg);
+  return m ? m[1] : msg;
+}
+
+function mailConnectErrorMessage(err, provider) {
+  const label = provider === 'microsoft' ? 'Outlook' : 'Gmail';
+  const msg = extractIpcErrorMessage(err);
+  if (err?.name === 'UserFacingError' || /Não foi possível ligar|Liga a tua conta/.test(msg)) {
+    return msg;
+  }
+  if (/cancelada|permitir|bloqueou|organização/i.test(msg)) return msg;
+  if (/client id|oauth|docs\/|\.env|definições|secret|invalid_client/i.test(msg)) {
+    return `Não foi possível ligar ao ${label}. Tenta novamente mais tarde.`;
+  }
+  if (!msg || msg.includes('Error invoking remote method')) {
+    return `Não foi possível ligar ao ${label}. Tenta novamente mais tarde.`;
+  }
+  return msg;
+}
 
 // ---------------------------------------------------------------------------
 // Provider helpers
@@ -246,8 +264,7 @@ async function connectMailProvider(provider) {
     }
     await connectMail();
   } catch (e) {
-    const label = p === 'microsoft' ? 'Outlook' : 'Gmail';
-    showToast(`Erro ao ligar ${label}: ${e.message}`, 'error');
+    showToast(mailConnectErrorMessage(e, p), 'error');
   }
 }
 
@@ -261,7 +278,7 @@ async function connectMail() {
     startDigestAutoRefresh();
     await runDigest();
   } catch (e) {
-    showToast(`Erro ao ligar ${mailProviderLabel()}: ${e.message}`, 'error');
+    showToast(mailConnectErrorMessage(e, currentMailProvider()), 'error');
   }
 }
 
@@ -330,10 +347,6 @@ async function refreshSettingsView() {
   els.anthropicModel.value = s.anthropicModel || 'claude-haiku-4-5';
   els.openaiModel.value = s.openaiModel || 'gpt-4.1-mini';
   els.googleModel.value = s.googleModel || 'gemini-2.5-flash';
-  els.googleClientId.value = s.googleClientId || '';
-  els.googleClientSecret.value = '';
-  if (els.microsoftClientId) els.microsoftClientId.value = s.microsoftClientId || '';
-  if (els.microsoftClientSecret) els.microsoftClientSecret.value = '';
   if (els.mailProviderSelect) els.mailProviderSelect.value = s.mailProvider || 'gmail';
 
   els.anthropicKey.value = '';
@@ -343,14 +356,6 @@ async function refreshSettingsView() {
   setKeyStatus(els.anthropicStatus, s.hasAnthropicKey);
   setKeyStatus(els.openaiStatus, s.hasOpenAIKey);
   setKeyStatus(els.googleApiStatus, s.hasGoogleKey);
-  setKeyStatus(els.googleClientSecretStatus, s.hasGoogleClientSecret);
-  setKeyStatus(els.microsoftClientSecretStatus, s.hasMicrosoftClientSecret);
-
-  syncBuiltinHint(els.oauthBuiltinHint, s.oauthBuiltInClient,
-    'Cliente OAuth Google incluído nesta instalação (build).');
-  syncBuiltinHint(els.oauthMicrosoftBuiltinHint, s.oauthBuiltInMicrosoftClient,
-    'Cliente OAuth Microsoft incluído nesta instalação (build).');
-
   syncAuthRow({
     connected: Boolean(s.hasGoogleAuth),
     statusEl: els.googleAuthStatus,
@@ -368,16 +373,6 @@ async function refreshSettingsView() {
 
   syncAuthShell();
   showProviderBlock(s.provider || 'anthropic');
-}
-
-function syncBuiltinHint(elHint, active, text) {
-  if (!elHint) return;
-  if (active) {
-    elHint.textContent = text;
-    elHint.classList.remove('hidden');
-  } else {
-    elHint.classList.add('hidden');
-  }
 }
 
 function syncAuthRow({ connected, statusEl, connectBtn, disconnectBtn, connectedText }) {
@@ -409,29 +404,23 @@ async function saveSettings() {
   const provider = els.providerSelect.value;
   const mailProv = els.mailProviderSelect?.value === 'microsoft' ? 'microsoft' : 'gmail';
 
-  await api.settings.set({
+  const settingsPayload = {
     provider,
     displayName: els.displayName?.value.trim() || '',
     anthropicModel: els.anthropicModel.value.trim(),
     openaiModel: els.openaiModel.value.trim(),
     googleModel: els.googleModel.value.trim(),
-    googleClientId: els.googleClientId.value.trim(),
-    microsoftClientId: els.microsoftClientId?.value.trim() || '',
     mailProvider: mailProv
-  });
+  };
+  await api.settings.set(settingsPayload);
   await mail.setProvider(mailProv);
 
   const anthropicKey = els.anthropicKey.value.trim();
   const openaiKey = els.openaiKey.value.trim();
   const googleKey = els.googleKey.value.trim();
-  const clientSecret = els.googleClientSecret.value.trim();
-  const msSecret = els.microsoftClientSecret?.value.trim() || '';
-
   if (anthropicKey) await api.keychain.set('anthropic-api-key', anthropicKey);
   if (openaiKey) await api.keychain.set('openai-api-key', openaiKey);
   if (googleKey) await api.keychain.set('google-api-key', googleKey);
-  if (clientSecret) await api.keychain.set('google-client-secret', clientSecret);
-  if (msSecret) await api.keychain.set('microsoft-client-secret', msSecret);
 
   await refreshSettingsView();
   await refreshProfile();

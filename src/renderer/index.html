@@ -140,19 +140,7 @@
 
     <section class="settings-section">
       <div class="section-label section-label-muted">Conta Outlook pessoal</div>
-      <p class="hint">
-        Só <strong>@outlook.com</strong> / Hotmail / Live — não contas de trabalho M365.
-        Tu registas <strong>uma</strong> app no <a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps">portal Azure</a>
-        (guia <code>docs/MICROSOFT-OAUTH.md</code>); utilizadores finais só fazem login.
-      </p>
-      <p id="oauth-microsoft-builtin-hint" class="hint hidden"></p>
-      <label class="field-label">Microsoft Client ID
-        <input type="text" id="microsoft-client-id" placeholder="UUID da aplicação Azure" autocomplete="off" />
-      </label>
-      <label class="field-label">Microsoft Client Secret
-        <input type="password" id="microsoft-client-secret" placeholder="Deixa em branco para manter" autocomplete="off" />
-        <span id="microsoft-client-secret-status" class="key-status"></span>
-      </label>
+      <p class="hint">Liga a tua conta Outlook pessoal (@outlook.com, Hotmail ou Live).</p>
       <div class="auth-row">
         <span id="microsoft-auth-status" class="meta keyline">Não ligado</span>
         <button type="button" id="btn-connect-microsoft" class="btn">Ligar Microsoft</button>
@@ -162,21 +150,7 @@
 
     <section class="settings-section">
       <div class="section-label section-label-muted">Conta Gmail</div>
-      <p class="hint">
-        Cliente OAuth tipo <strong>Aplicação para computador</strong> —
-        <a href="https://console.cloud.google.com/apis/credentials">Consola Google</a>.
-        Guia para uso público sem avisos: <code>docs/GOOGLE-OAUTH-PRODUCAO.md</code>
-        (ecrã de consentimento em <strong>Produção</strong> + verificação do scope <code>gmail.modify</code>).
-        Login: redirect <code>http://127.0.0.1:&lt;porta&gt;/oauth/callback</code>.
-      </p>
-      <p id="oauth-builtin-hint" class="hint hidden"></p>
-      <label class="field-label">Google Client ID
-        <input type="text" id="google-client-id" placeholder="123….apps.googleusercontent.com" autocomplete="off" />
-      </label>
-      <label class="field-label">Google Client Secret
-        <input type="password" id="google-client-secret" placeholder="Deixa em branco para manter" autocomplete="off" />
-        <span id="google-client-secret-status" class="key-status"></span>
-      </label>
+      <p class="hint">Liga a tua conta Google para ler e resumir o email.</p>
       <div class="auth-row">
         <span id="google-auth-status" class="meta keyline">Não ligado</span>
         <button type="button" id="btn-connect-google" class="btn">Ligar ao Google</button>

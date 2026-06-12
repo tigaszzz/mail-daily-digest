@@ -60,17 +60,30 @@ Até lá, utilizadores podem usar **Avançadas → Aceder** no aviso (limitado a
 
 ### 4. Credenciais na app
 
-**Opção A — Distribuição (recomendado):** variáveis de ambiente no build (não commitar):
+#### Desenvolvimento (`npm run dev`)
+
+Preenche `.env` (copia de `.env.example`) ou usa as Definições da app:
 
 ```bash
-export GOOGLE_OAUTH_CLIENT_ID="xxxx.apps.googleusercontent.com"
-export GOOGLE_OAUTH_CLIENT_SECRET="GOCSPX-..."
-npm start
+GOOGLE_OAUTH_CLIENT_ID=xxxx.apps.googleusercontent.com
+GOOGLE_OAUTH_CLIENT_SECRET=GOCSPX-...
+npm run dev
 ```
 
-**Opção B — Manual:** Definições da app → colar Client ID; Secret opcional para Desktop+PKCE mas recomendado.
+#### Distribuição (instaladores `.dmg` / `.exe`)
 
-Cada utilizador obtém **tokens próprios** na keychain ao clicar «Entrar com Gmail» — não partilham a caixa de correio entre si.
+O **developer** regista **uma** app OAuth na Google Cloud. As credenciais são injectadas **no build** — o utilizador final **não** as vê nem configura.
+
+1. Preenche `.env` com `GOOGLE_OAUTH_CLIENT_ID` e `GOOGLE_OAUTH_CLIENT_SECRET` (e opcionalmente `MICROSOFT_*`).
+2. Corre o empacotamento — o script `scripts/inject-oauth.js` gera `build/oauth-build.js` (gitignored); `electron-builder.config.js` deriva o protocolo OAuth a partir desse ficheiro (nada no `package.json` commitado):
+
+```bash
+npm run dist:mac   # ou dist:win
+```
+
+3. O instalador inclui o Client ID/Secret embutidos. Cada utilizador obtém **tokens OAuth próprios** na keychain ao clicar «Entrar com Gmail» — não partilham a caixa de correio entre si. O Client ID **não** aparece no repositório Git — só no `.env` local e no binário empacotado.
+
+> **Nota de segurança:** num cliente Desktop com PKCE, o Client ID é público por natureza; o secret não é um segredo forte (pode ser extraído do binário). A protecção real são os **tokens por utilizador** na keychain e o fluxo PKCE.
 
 ## Fluxo técnico na app
 

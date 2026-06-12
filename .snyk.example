@@ -1,0 +1,12 @@
+# Copia para .snyk (não commitar — política local / org Snyk)
+version: v1.25.0
+
+# Snyk Code: excluir loopback OAuth (HTTP em 127.0.0.1 é obrigatório por RFC 8252)
+exclude:
+  global:
+    - src/services/oauth-loopback.js
+    - build/oauth-build.js
+
+ignore: {}
+
+patch: {}
